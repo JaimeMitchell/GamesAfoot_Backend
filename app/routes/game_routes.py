@@ -17,7 +17,7 @@ bp = Blueprint("tours", __name__, url_prefix="/tours")
 # )
 
 client = OpenAI(
-  organization='org-fcykkab8msT5mAV96whSHaeI'
+    api_key=os.environ.get("OPENAI_API_KEY")
 )
 
 @bp.post("", strict_slashes=False)
@@ -129,16 +129,16 @@ def add_locations(char_id):
 
 def generate_locations(user_input):
     game_prompts = {
-    'Historical Quest': f"Generate a JSON array of {user_input.num_sites} historical locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Nature Walk': f"Generate a JSON array of {user_input.num_sites} natural locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Urban Adventure': f"Generate a JSON array of {user_input.num_sites} urban locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Mystery Solver': f"Generate a JSON array of {user_input.num_sites} mysterious locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Photo Hunt': f"Generate a JSON array of {user_input.num_sites} picturesque locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Exercise Challenge': f"Generate a JSON array of {user_input.num_sites} locations suitable for an exercise challenge within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Landmark Discovery': f"Generate a JSON array of {user_input.num_sites} landmark locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Art Walk': f"Generate a JSON array of {user_input.num_sites} artistic locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Puzzle Quest': f"Generate a JSON array of {user_input.num_sites} locations suitable for a puzzle quest within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Foodie Trail': f"Generate a JSON array of {user_input.num_sites} locations suitable for a foodie trail within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'."
+    'Historical Quest': f"Generate a JSON array of {user_input.num_sites} historical locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Nature Walk': f"Generate a JSON array of {user_input.num_sites} natural locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Urban Adventure': f"Generate a JSON array of {user_input.num_sites} urban locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Mystery Solver': f"Generate a JSON array of {user_input.num_sites} mysterious locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Photo Hunt': f"Generate a JSON array of {user_input.num_sites} picturesque locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Exercise Challenge': f"Generate a JSON array of {user_input.num_sites} locations suitable for an exercise challenge within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Landmark Discovery': f"Generate a JSON array of {user_input.num_sites} landmark locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Art Walk': f"Generate a JSON array of {user_input.num_sites} artistic locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Puzzle Quest': f"Generate a JSON array of {user_input.num_sites} locations suitable for a puzzle quest within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Foodie Trail': f"Generate a JSON array of {user_input.num_sites} locations suitable for a foodie trail within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'."
 }
 
 
