@@ -6,13 +6,17 @@ from ..models.user_input import UserInput
 from sqlalchemy import func, union, except_
 from openai import OpenAI
 import os
-
+import json
 
 bp = Blueprint("tours", __name__, url_prefix="/tours")
 
+# client = OpenAI(
+#     api_key=os.environ.get("OPENAI_API_KEY"),
+#     base_url="https://api.llama-api.com"
+# )
+
 client = OpenAI(
-    api_key=os.environ.get("LLAMA_API_KEY"),
-    base_url="https://api.llama-api.com"
+  organization='org-fcykkab8msT5mAV96whSHaeI'
 )
 
 @bp.post("", strict_slashes=False)
@@ -85,7 +89,27 @@ def add_locations(char_id):
 
     # Generate new locations
     locations = generate_locations(user_input)
-    
+    print(f'locations from add_locations method:{locations}')
+    new_locations = []
+
+    # for location in locations:
+    #     text = location[location.find(" ")+1:]
+    #     new_location = Location(
+    #         location_text = text.strip("\""),
+    #         user_input = user_input
+    #     )
+        # new_locations.append(new_location)
+        
+    for location in locations:
+        new_location = Location(
+            name=location["name"],
+            latitude=location["latitude"],
+            longitude=location["longitude"],
+            description=location["description"],
+            clue=location["clue"],
+            user_input=user_input
+        )
+        
     if not locations:
         return make_response(jsonify("Failed to generate locations"), 500)
 
@@ -102,35 +126,37 @@ def add_locations(char_id):
 
 def generate_locations(user_input):
     game_prompts = {
-        'Historical Quest': f"Generate a set of {user_input.num_sites} historical locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
-        'Nature Walk': f"Generate a set of {user_input.num_sites} natural locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
-        'Urban Adventure': f"Generate a set of {user_input.num_sites} urban locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
-        'Mystery Solver': f"Generate a set of {user_input.num_sites} mysterious locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
-        'Photo Hunt': f"Generate a set of {user_input.num_sites} picturesque locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
-        'Exercise Challenge': f"Generate a set of {user_input.num_sites} locations suitable for an exercise challenge within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
-        'Landmark Discovery': f"Generate a set of {user_input.num_sites} landmark locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
-        'Art Walk': f"Generate a set of {user_input.num_sites} artistic locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
-        'Puzzle Quest': f"Generate a set of {user_input.num_sites} locations suitable for a puzzle quest within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
-        'Foodie Trail': f"Generate a set of {user_input.num_sites} locations suitable for a foodie trail within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you."
-    }
+    'Historical Quest': f"Generate a JSON array of {user_input.num_sites} historical locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Nature Walk': f"Generate a JSON array of {user_input.num_sites} natural locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Urban Adventure': f"Generate a JSON array of {user_input.num_sites} urban locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Mystery Solver': f"Generate a JSON array of {user_input.num_sites} mysterious locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Photo Hunt': f"Generate a JSON array of {user_input.num_sites} picturesque locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Exercise Challenge': f"Generate a JSON array of {user_input.num_sites} locations suitable for an exercise challenge within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Landmark Discovery': f"Generate a JSON array of {user_input.num_sites} landmark locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Art Walk': f"Generate a JSON array of {user_input.num_sites} artistic locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Puzzle Quest': f"Generate a JSON array of {user_input.num_sites} locations suitable for a puzzle quest within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Foodie Trail': f"Generate a JSON array of {user_input.num_sites} locations suitable for a foodie trail within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'."
+}
 
-    input_message: str = game_prompts[user_input.game_type]
 
-    chat_completion_object = client.chat.completions.create(
-        model="llama3-70b",
+    input_message = game_prompts[user_input.game_type]
+
+    completion = client.chat.completions.create(
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "user", "content": input_message}
         ]
     )
    
-    rtrn_stmt = chat_completion_object.choices[0].message.content
-    
-    # Assuming the response is a string representation of a list, we need to convert it to an actual list
-    # Example response: '["greeting1", "greeting2", "greeting3"]'
-    greetings_list = eval(rtrn_stmt)  # eval is used to convert string representation of list to an actual list
-    return greetings_list
+    print(f'completion response from generate_greetings method: {completion.choices[0].message.content}')
+    rtrn_stmt = completion.choices[0].message.content
+    return rtrn_stmt
+    # try:
+    #     location_list = json.loads(rtrn_stmt)  # Parse JSON response into a Python list
+    # except json.JSONDecodeError as e:
+    #     return []  # Handle the case where JSON decoding fails
 
-
+    # return location_list
         
 
 
