@@ -75,7 +75,8 @@ def get_user_input(char_id):
             "location lat": location.latitude,
             "location long": location.longitude,
             "location description": location.description,
-            "location clue": location.clue
+            "location clue": location.clue,
+            "location id": location.id
         })
 
     return jsonify(response)
@@ -154,13 +155,86 @@ def generate_locations(user_input):
     print(f'completion response from generate_greetings method: {completion.choices[0].message.content}')
     rtrn_stmt = completion.choices[0].message.content
     return rtrn_stmt
-    # try:
-    #     location_list = json.loads(rtrn_stmt)  # Parse JSON response into a Python list
-    # except json.JSONDecodeError as e:
-    #     return []  # Handle the case where JSON decoding fails
 
-    # return location_list
-        
+@bp.put("/<int:char_id>", strict_slashes=False)
+def update_user_input(char_id):
+    user_input = validate_model(UserInput, char_id)
+
+    request_body = request.get_json()
+
+    try:
+        user_input.latitude = request_body.get('latitude', user_input.latitude)
+        user_input.longitude = request_body.get('longitude', user_input.longitude)
+        user_input.distance = request_body.get('distance', user_input.distance)
+        user_input.num_sites = request_body.get('num_sites', user_input.num_sites)
+        user_input.game_type = request_body.get('game_type', user_input.game_type)
+
+        db.session.commit()
+
+        return make_response(user_input.to_dict(), 200)
+
+    except KeyError as e:
+        abort(make_response({"message": f"missing required value: {e}"}, 400))
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return make_response(jsonify(f"Failed to update user input: {str(e)}"), 500)
+
+
+@bp.delete("/<int:char_id>", strict_slashes=False)
+def delete_user_input(char_id):
+    user_input = validate_model(UserInput, char_id)
+
+    try:
+        db.session.delete(user_input)
+        db.session.commit()
+
+        return make_response(jsonify(f"User Input ID {user_input.id} deleted successfully"), 200)
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return make_response(jsonify(f"Failed to delete user input: {str(e)}"), 500)
+
+# # Locations I can't quite figure out why I'd want to update locations or how that would work in the game play. I think it's smarter to just delete and regenerate locations. Saves space and time.
+#
+# @bp.put("/locations/<int:location_id>", strict_slashes=False)
+# def update_location(location_id):
+#     location = validate_model(Location, location_id)
+
+#     request_body = request.get_json()
+
+#     try:
+#         location.name = request_body.get('name', location.name)
+#         location.latitude = request_body.get('latitude', location.latitude)
+#         location.longitude = request_body.get('longitude', location.longitude)
+#         location.description = request_body.get('description', location.description)
+#         location.clue = request_body.get('clue', location.clue)
+
+#         db.session.commit()
+
+#         return make_response(location.to_dict(), 200)
+
+#     except KeyError as e:
+#         abort(make_response({"message": f"missing required value: {e}"}, 400))
+
+#     except SQLAlchemyError as e:
+#         db.session.rollback()
+#         return make_response(jsonify(f"Failed to update location: {str(e)}"), 500)
+
+
+# @bp.delete("/locations/<int:location_id>", strict_slashes=False)
+# def delete_location(location_id):
+#     location = validate_model(Location, location_id)
+
+#     try:
+#         db.session.delete(location)
+#         db.session.commit()
+
+#         return make_response(jsonify(f"Location ID {location.id} deleted successfully"), 200)
+
+#     except SQLAlchemyError as e:
+#         db.session.rollback()
+#         return make_response(jsonify(f"Failed to delete location: {str(e)}"), 500)
 
 
 def validate_model(cls, id):
