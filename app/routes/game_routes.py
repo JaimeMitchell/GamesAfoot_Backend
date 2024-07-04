@@ -4,6 +4,7 @@ from ..db import db
 from ..models.location import Location
 from ..models.user_input import UserInput
 from sqlalchemy import func, union, except_
+from sqlalchemy.exc import SQLAlchemyError
 from openai import OpenAI
 import os
 import json
@@ -79,63 +80,65 @@ def get_user_input(char_id):
 
     return jsonify(response)
 
-@bp.post("/<char_id>/generate_locations", strict_slashes=False)
+@bp.post("/<int:char_id>/generate_locations", strict_slashes=False)
 def add_locations(char_id):
     user_input = validate_model(UserInput, char_id)
-    
+
     # Check if locations have already been generated
     if user_input.locations:
-        return make_response(jsonify(f"Locations already generated for {user_input.id}"), 201)
+        return make_response(jsonify(f"Locations already generated for User Input ID {user_input.id}"), 201)
 
     # Generate new locations
-    locations = generate_locations(user_input)
-    print(f'locations from add_locations method:{locations}')
-    new_locations = []
+    locations_data = generate_locations(user_input)
 
-    # for location in locations:
-    #     text = location[location.find(" ")+1:]
-    #     new_location = Location(
-    #         location_text = text.strip("\""),
-    #         user_input = user_input
-    #     )
-        # new_locations.append(new_location)
-        
-    for location in locations:
-        new_location = Location(
-            name=location["name"],
-            latitude=location["latitude"],
-            longitude=location["longitude"],
-            description=location["description"],
-            clue=location["clue"],
-            user_input=user_input
-        )
-        
-    if not locations:
+    if not locations_data:
         return make_response(jsonify("Failed to generate locations"), 500)
+
+    try:
+        locations = json.loads(locations_data) if isinstance(locations_data, str) else locations_data
+    except json.JSONDecodeError:
+        return make_response(jsonify("Failed to parse generated locations"), 500)
 
     # Add new locations to the database
     try:
-        db.session.add_all(locations)
+        new_locations = []
+
+        for location in locations:
+            # Ensure latitude and longitude are converted to strings
+            latitude = str(location["latitude"])
+            longitude = str(location["longitude"])
+
+            new_location = Location(
+                name=location["name"],
+                latitude=latitude,
+                longitude=longitude,
+                description=location["description"],
+                clue=location["clue"],
+                user_input=user_input
+            )
+            new_locations.append(new_location)
+
+        db.session.add_all(new_locations)
         db.session.commit()
-    except Exception as e:
-        db.session.rollback()  # Rollback changes if an error occurs
+
+        return make_response(jsonify(f"Locations successfully added to User Input ID {user_input.id}"), 201)
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
         return make_response(jsonify(f"Failed to add locations: {str(e)}"), 500)
-
-    return make_response(jsonify(f"Locations successfully added to {user_input.id}"), 201)
-
 
 def generate_locations(user_input):
     game_prompts = {
-    'Historical Quest': f"Generate a JSON array of {user_input.num_sites} historical locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Nature Walk': f"Generate a JSON array of {user_input.num_sites} natural locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Urban Adventure': f"Generate a JSON array of {user_input.num_sites} urban locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Mystery Solver': f"Generate a JSON array of {user_input.num_sites} mysterious locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Photo Hunt': f"Generate a JSON array of {user_input.num_sites} picturesque locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Exercise Challenge': f"Generate a JSON array of {user_input.num_sites} locations suitable for an exercise challenge within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Landmark Discovery': f"Generate a JSON array of {user_input.num_sites} landmark locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Art Walk': f"Generate a JSON array of {user_input.num_sites} artistic locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Puzzle Quest': f"Generate a JSON array of {user_input.num_sites} locations suitable for a puzzle quest within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Foodie Trail': f"Generate a JSON array of {user_input.num_sites} locations suitable for a foodie trail within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include 'name', 'latitude', 'longitude', 'description', and 'clue'."
+    'Historical Quest': f"Generate a JSON array of {user_input.num_sites} historical locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Nature Walk': f"Generate a JSON array of {user_input.num_sites} natural locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Urban Adventure': f"Generate a JSON array of {user_input.num_sites} urban locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Mystery Solver': f"Generate a JSON array of {user_input.num_sites} mysterious locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Photo Hunt': f"Generate a JSON array of {user_input.num_sites} picturesque locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Exercise Challenge': f"Generate a JSON array of {user_input.num_sites} locations suitable for an exercise challenge within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Landmark Discovery': f"Generate a JSON array of {user_input.num_sites} landmark locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Art Walk': f"Generate a JSON array of {user_input.num_sites} artistic locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Puzzle Quest': f"Generate a JSON array of {user_input.num_sites} locations suitable for a puzzle quest within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
+    'Foodie Trail': f"Generate a JSON array of {user_input.num_sites} locations suitable for a foodie trail within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'."
 }
 
 
