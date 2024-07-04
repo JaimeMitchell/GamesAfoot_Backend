@@ -1,3 +1,4 @@
+
 from flask import Blueprint, jsonify, request, abort, make_response
 from ..db import db
 from ..models.location import Location
@@ -6,101 +7,114 @@ from sqlalchemy import func, union, except_
 from openai import OpenAI
 import os
 
+
 bp = Blueprint("tours", __name__, url_prefix="/tours")
+
 client = OpenAI(
     api_key=os.environ.get("LLAMA_API_KEY"),
     base_url="https://api.llama-api.com"
 )
 
-game_prompts = {
-    'Historical Quest': f"Generate a set of {{user_input.num_sites}} historical locations within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location.",
-    'Nature Walk': f"Generate a set of {{user_input.num_sites}} natural locations within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location.",
-    'Urban Adventure': f"Generate a set of {{user_input.num_sites}} urban locations within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location.",
-    'Mystery Solver': f"Generate a set of {{user_input.num_sites}} mysterious locations within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location.",
-    'Photo Hunt': f"Generate a set of {{user_input.num_sites}} picturesque locations within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location.",
-    'Exercise Challenge': f"Generate a set of {{user_input.num_sites}} locations suitable for an exercise challenge within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location.",
-    'Landmark Discovery': f"Generate a set of {{user_input.num_sites}} landmark locations within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location.",
-    'Art Walk': f"Generate a set of {{user_input.num_sites}} artistic locations within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location.",
-    'Puzzle Quest': f"Generate a set of {{user_input.num_sites}} locations suitable for a puzzle quest within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location.",
-    'Foodie Trail': f"Generate a set of {{user_input.num_sites}} locations suitable for a foodie trail within {{user_input.distance}} of ({{user_input.latitude}}, {{user_input.longitude}}). Provide coordinates, a brief description, and a clue for each location."
-}
-
 @bp.post("", strict_slashes=False)
 def create_user_input():
     request_body = request.get_json()
-    print(request_body)
-    try: 
-        new_user_input = UserInput.from_dict(request_body)
-        print(new_user_input)
+
+    try:
+        new_user_input = UserInput(
+            latitude=request_body['latitude'],
+            longitude=request_body['longitude'],
+            distance=request_body['distance'],
+            num_sites=request_body['num_sites'],
+            game_type=request_body['game_type']
+        )
         db.session.add(new_user_input)
         db.session.commit()
+
         return make_response(new_user_input.to_dict(), 201)
+
     except KeyError as e:
         abort(make_response({"message": f"missing required value: {e}"}, 400))
 
 @bp.get("", strict_slashes=False)
 def get_user_inputs():
-    user_input_query = db.select(UserInput)
-    user_inputs = db.session.scalars(user_input_query)
+    user_inputs = UserInput.query.all()
     response = []
+
     for user_input in user_inputs:
-        response.append(
-            {
-                "id" : user_input.id,
-                "latitude" : user_input.latitude,
-                "longitude" : user_input.longitude,
-                "distance" : user_input.distance,
-                "num_sites" : user_input.num_sites,
-                "game_type" : user_input.game_type
-            }
-        )
+        response.append({
+            "id": user_input.id,
+            "latitude": user_input.latitude,
+            "longitude": user_input.longitude,
+            "distance": user_input.distance,
+            "num_sites": user_input.num_sites,
+            "game_type": user_input.game_type
+        })
+
     return jsonify(response)
 
-@bp.get("/<char_id>/user_input", strict_slashes=False)
+@bp.get("/<int:char_id>/user_input", strict_slashes=False)
 def get_user_input(char_id):
     user_input = validate_model(UserInput, char_id)
-    if not user_input.locations:
-        return make_response(jsonify(f"No locations found for {user_input.id} "), 201)
-    response = {"User_Input_Id" : user_input.id,
-                "Locations" : []}
-    for location in user_input.locations:
+
+    if not user_input:
+        return make_response(jsonify(f"No user input found for ID {char_id}"), 404)
+
+    locations = Location.query.filter_by(user_input_id=user_input.id).all()
+    response = {
+        "User_Input_Id": user_input.id,
+        "Locations": []
+    }
+    for location in locations:
         response["Locations"].append({
             "location name": location.name,
-            "location lat" : location.latitude,
+            "location lat": location.latitude,
             "location long": location.longitude,
             "location description": location.description,
             "location clue": location.clue
         })
+
     return jsonify(response)
 
 @bp.post("/<char_id>/generate_locations", strict_slashes=False)
 def add_locations(char_id):
     user_input = validate_model(UserInput, char_id)
-    locations = generate_locations(user_input, game_prompts[user_input.game_type])
-
-    # Print each location on its own separate line
-    for location in locations:
-        print(location)
-
+    
+    # Check if locations have already been generated
     if user_input.locations:
-        return make_response(jsonify(f"Locations already generated for {user_input.name}"), 201)
+        return make_response(jsonify(f"Locations already generated for {user_input.id}"), 201)
 
-    new_locations = []
-    for location in locations:
-        new_location = Location(
-            name=location["name"],
-            user_input=user_input
-        )
-        new_locations.append(new_location)
+    # Generate new locations
+    locations = generate_locations(user_input)
+    
+    if not locations:
+        return make_response(jsonify("Failed to generate locations"), 500)
 
-    db.session.add_all(new_locations)
-    db.session.commit()
+    # Add new locations to the database
+    try:
+        db.session.add_all(locations)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()  # Rollback changes if an error occurs
+        return make_response(jsonify(f"Failed to add locations: {str(e)}"), 500)
 
-    return make_response(jsonify(f"Locations successfully added to {user_input.name}"), 201)
+    return make_response(jsonify(f"Locations successfully added to {user_input.id}"), 201)
 
-def generate_locations(user_input, game_prompt):
-    input_message = game_prompt  # Changed to use game_prompt parameter
-    print(input_message)
+
+def generate_locations(user_input):
+    game_prompts = {
+        'Historical Quest': f"Generate a set of {user_input.num_sites} historical locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
+        'Nature Walk': f"Generate a set of {user_input.num_sites} natural locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
+        'Urban Adventure': f"Generate a set of {user_input.num_sites} urban locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
+        'Mystery Solver': f"Generate a set of {user_input.num_sites} mysterious locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
+        'Photo Hunt': f"Generate a set of {user_input.num_sites} picturesque locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
+        'Exercise Challenge': f"Generate a set of {user_input.num_sites} locations suitable for an exercise challenge within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
+        'Landmark Discovery': f"Generate a set of {user_input.num_sites} landmark locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
+        'Art Walk': f"Generate a set of {user_input.num_sites} artistic locations within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
+        'Puzzle Quest': f"Generate a set of {user_input.num_sites} locations suitable for a puzzle quest within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you.",
+        'Foodie Trail': f"Generate a set of {user_input.num_sites} locations suitable for a foodie trail within {user_input.distance} square miles of ({user_input.latitude}, {user_input.longitude}). Provide the name, a brief description, and a clue for each location. Do not respond with an intro, do not waste tokens, only give me the info I'm requesting and nothing from you."
+    }
+
+    input_message: str = game_prompts[user_input.game_type]
 
     chat_completion_object = client.chat.completions.create(
         model="llama3-70b",
@@ -108,25 +122,26 @@ def generate_locations(user_input, game_prompt):
             {"role": "user", "content": input_message}
         ]
     )
-    print(chat_completion_object.choices[0].message.content)
+   
     rtrn_stmt = chat_completion_object.choices[0].message.content
-
+    
     # Assuming the response is a string representation of a list, we need to convert it to an actual list
-    # Example response: '["location1", "location2", "location3"]'
-    # locations_list = eval(rtrn_stmt)  # eval is used to convert string representation of list to an actual list
-    return rtrn_stmt
+    # Example response: '["greeting1", "greeting2", "greeting3"]'
+    greetings_list = eval(rtrn_stmt)  # eval is used to convert string representation of list to an actual list
+    return greetings_list
+
+
+        
+
 
 def validate_model(cls, id):
     try:
         id = int(id)
-    except:
-        response = {"message": f"{cls.__name__} {id} invalid"}
-        abort(make_response(response , 400))
+    except ValueError:
+        abort(make_response({"message": f"{cls.__name__} {id} invalid"}, 400))
 
-    query = db.select(cls).where(cls.id == id)
-    model = db.session.scalar(query)
-    if model:
-        return model
+    model = cls.query.get(id)
+    if not model:
+        abort(make_response({"message": f"{cls.__name__} {id} not found"}, 404))
 
-    response = {"message": f"{cls.__name__} {id} not found"}
-    abort(make_response(response, 404))
+    return model
