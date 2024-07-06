@@ -5,18 +5,7 @@
 <h3>A customized AI tour guide and treasure hunting game at your fingertips. Anytime, anywhere, the game's afoot!</h3>
 <p>
 AI generated tour guide game in which the participants use their phone’s or computer’s location to generate a historical geocache tour in their surrounding area. I tested this out and it works. My last capstone involved mapping markers on React leaflet. I thought I’d revisit plotting markers but with AI. When the user's location marker == a the AI generated location then points are added and the next clue and location on the location list appears until the user has come to the final locaton.
-MVP Feature Set
-The user prompts with their location. They can give a distance they’d like to walk OR a number of sites they’d like to see in a predetermined area.
-The request goes towards a text response first from llama/OpenAI
-The response it a set of treasure hunt/scavenger hunt clues to go on this tour. If they can’t figure it out, it can be shown on the map via location markers, including their own realtime location. I would recycle some of the code from my WaterWitch project.
-Stretch goal would be to click on each of these places when the users locate it and give a brief commentary on it’s history or fun facts.
-Stretch goal 2: Eventually have plans to turn it into a dating/social app where a treasure hunt could be created between two player’s locations so that they find each other by the location clues provided. Yes, the UPDATE would absolutely need to be involved since a person could go off course and so new clues generated to get them back on-course towards the other/s.
-"Go East" Getting direction prompts. A ping or visual or radius circle on the map, red if far, yellow if closer, green if closer, while trying to find it. Visual cues to help. Not just clue.
-example user_input that is plugged into the AI prompt to get "a list of location" { "distance": "2", "game_type": "Historical Quest", "id": 1, "starting_latitude": "40.712776", "starting_longitude": "-74.005974", "num_sites": "3" },
-NOTE "Starting Location" - User Location OR User Dictated and assigned. Gives user a choice between automatically dictating the starting point, or allowing user to.
-Example of locations list . Example
-Third model USER to tie location list and user_input. User model keeps track of user model or
-Location Model and User model have to work together in order to update game play such as user marker changing color to dictate how close they are to location they are looking for, or when they find location user_location == cur_location.id the go to the next cur_loction = new_location.
+
 <br/>
 Written in React and Python as a Capstone Project at <a href='https://adadevelopersacademy.org/'>Ada Developers Academy.</a>
 </h4>
