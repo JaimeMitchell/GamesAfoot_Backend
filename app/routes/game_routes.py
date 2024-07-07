@@ -129,15 +129,9 @@ def add_locations(char_id):
         return make_response(jsonify(f"Failed to add locations: {str(e)}"), 500)
 
 def generate_locations(user_input):
-    input_message = f"""Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} square mile/s and/or {user_input.distance} walking distance of the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'. However, DO NOT MAKE UP FICTIONAL LOCATIONS. For each location you can't find for the {user_input.game_type} within the user's location, then give a locations that exist and fill the rest of the remaining {user_input.num_sites} array with null values explaining why:
-{{
-    "name": "N/A",
-    "latitude": {user_input.latitude},
-    "longitude": {user_input.longitude},
-    "description": "N/A",
-    "clue": "Can't find those kinds of locations in this area. Try a different description type and add a name to your current location."
-}} Make sure to ONLY RETURN A JSON ARRAY AND NEVER A STRING REPRESENTATION OF THE ARRAY.
-"""
+    input_message = f"Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} square mile/s and/or {user_input.distance} walking distance of the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'. However, DO NOT MAKE UP FICTIONAL LOCATIONS. F Make sure to ONLY RETURN A JSON ARRAY AND NEVER A STRING REPRESENTATION OF THE ARRAY."
+
+    
     print(f'input_message: {input_message}')
 
     completion = client.chat.completions.create(
