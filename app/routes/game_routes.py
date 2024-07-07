@@ -128,10 +128,8 @@ def add_locations(char_id):
         db.session.rollback()
         return make_response(jsonify(f"Failed to add locations: {str(e)}"), 500)
 
-import json
-
 def generate_locations(user_input):
-    input_message = f"Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} square mile/s and/or {user_input.distance} walking distance of the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'. However, DO NOT MAKE UP FICTIONAL LOCATIONS. F Make sure to ONLY RETURN A JSON ARRAY AND NEVER A STRING REPRESENTATION OF THE JSON ARRAY."
+    input_message = f"Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} square mile/s and/or {user_input.distance} walking distance of the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'. However, DO NOT MAKE UP FICTIONAL LOCATIONS. Make sure to ONLY respond with a JSON ARRAY, without any charaters before or after the JSON, and NEVER A STRING REPRESENTATION OF THE JSON ARRAY."
 
     print(f'input_message: {input_message}')
 
