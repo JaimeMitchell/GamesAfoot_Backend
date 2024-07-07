@@ -129,30 +129,23 @@ def add_locations(char_id):
         return make_response(jsonify(f"Failed to add locations: {str(e)}"), 500)
 
 def generate_locations(user_input):
-    game_prompts = {
-    'Art Walk': f"Generate a JSON array of {user_input.num_sites} artistic locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Bar Crawl': f"Generate a JSON array of {user_input.num_sites} bars and nightlife spots within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Exercise Challenge': f"Generate a JSON array of {user_input.num_sites} locations suitable for an exercise challenge within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Foodie Trail': f"Generate a JSON array of {user_input.num_sites} locations suitable for a foodie trail within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Historical Quest': f"Generate a JSON array of {user_input.num_sites} historical locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Kid-Friendly Locations': f"Generate a JSON array of {user_input.num_sites} kid-friendly locations such as playgrounds, parks, and family-friendly businesses within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Landmark Discovery': f"Generate a JSON array of {user_input.num_sites} landmark locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'LGBTQ Locations': f"Generate a JSON array of {user_input.num_sites} LGBTQ-friendly locations and businesses within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Mystery Solver': f"Generate a JSON array of {user_input.num_sites} mysterious locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Nature Walk': f"Generate a JSON array of {user_input.num_sites} natural locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Photo Hunt': f"Generate a JSON array of {user_input.num_sites} picturesque locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Puzzle Quest': f"Generate a JSON array of {user_input.num_sites} locations suitable for a puzzle quest within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'.",
-    'Urban Adventure': f"Generate a JSON array of {user_input.num_sites} urban locations within {user_input.distance} mile walking distance of ({user_input.latitude}, {user_input.longitude}). Ensure all locations are within this distance. The starting point should be ({user_input.latitude}, {user_input.longitude}) and locations should be generated within the walking distance from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'."
-}
-
-    input_message = game_prompts[user_input.game_type]
+    input_message = f"""Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} square mile/s and/or {user_input.distance} walking distance of the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'. However, DO NOT MAKE UP FICTIONAL LOCATIONS. For each location you can't find for the {user_input.game_type} within the user's location, then give a locations that exist and fill the rest of the remaining {user_input.num_sites} array with null values explaining why:
+{{
+    "name": "N/A",
+    "latitude": {user_input.latitude},
+    "longitude": {user_input.longitude},
+    "description": "N/A",
+    "clue": "Can't find those kinds of locations in this area. Try a different description type and add a name to your current location."
+}} Make sure to ONLY RETURN A JSON ARRAY AND NEVER A STRING REPRESENTATION OF THE ARRAY.
+"""
+    print(f'input_message: {input_message}')
 
     completion = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4-turbo",
     messages=[
         {"role": "user", "content": input_message}
     ],
-    temperature=0.1  # Adjust as needed
+    temperature=0.01  # Adjust as needed
 )
 
    
