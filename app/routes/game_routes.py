@@ -129,20 +129,23 @@ def add_locations(char_id):
         return make_response(jsonify(f"Failed to add locations: {str(e)}"), 500)
 
 def generate_locations(user_input):
-    input_message = f"Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} square mile/s and/or {user_input.distance} walking distance of the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'. However, DO NOT MAKE UP FICTIONAL LOCATIONS. Make sure to ONLY respond with a JSON ARRAY, without any charaters before or after the JSON, and NEVER A STRING REPRESENTATION OF THE JSON ARRAY."
+    input_message = f"Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} miles from the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. DO NOT GO OUT OF BOUNDS OF THE WALKING DISTANCE. DO NOT MAKE UP FICTIONAL LOCATIONS. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'. Make sure to ONLY respond with a JSON ARRAY, without any charaters before or after the JSON, and NEVER A STRING REPRESENTATION OF THE JSON ARRAY. Note: If you can not find real and legitimate locations in the user's location that meet the promts request, than just insert the string values in the JSON prompting the user as to why you couldn't find anymore real locations within the distance given, whether that's distance requirements or the kind of things they want to see in their treasure hunt." 
 
     print(f'input_message: {input_message}')
 
     completion = client.chat.completions.create(
-        model="gpt-4-turbo",
+        model="gpt-4o",
         messages=[
             {"role": "user", "content": input_message}
         ],
-        temperature=0.01  # Adjust as needed
+        temperature=0.2,  # Lower temperature for more deterministic responses
+        top_p=1.0,        # Use all possible tokens
+        frequency_penalty=0,  # Allow repetitions
+        presence_penalty=1.0  # Strongly discourage new topics
     )
 
     response_content = completion.choices[0].message.content.strip()
-
+    print(response_content)
     # First try to parse response_content as JSON
     try:
         response_json = json.loads(response_content)
