@@ -128,24 +128,48 @@ def add_locations(char_id):
         db.session.rollback()
         return make_response(jsonify(f"Failed to add locations: {str(e)}"), 500)
 
-def generate_locations(user_input):
-    input_message = f"Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} square mile/s and/or {user_input.distance} walking distance of the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'. However, DO NOT MAKE UP FICTIONAL LOCATIONS. F Make sure to ONLY RETURN A JSON ARRAY AND NEVER A STRING REPRESENTATION OF THE ARRAY."
+import json
 
-    
+def generate_locations(user_input):
+    input_message = f"Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} square mile/s and/or {user_input.distance} walking distance of the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and 'clue'. However, DO NOT MAKE UP FICTIONAL LOCATIONS. F Make sure to ONLY RETURN A JSON ARRAY AND NEVER A STRING REPRESENTATION OF THE JSON ARRAY."
+
     print(f'input_message: {input_message}')
 
     completion = client.chat.completions.create(
-    model="gpt-4-turbo",
-    messages=[
-        {"role": "user", "content": input_message}
-    ],
-    temperature=0.01  # Adjust as needed
-)
+        model="gpt-4-turbo",
+        messages=[
+            {"role": "user", "content": input_message}
+        ],
+        temperature=0.01  # Adjust as needed
+    )
 
-   
-    print(f'completion response from generate_greetings method: {completion.choices[0].message.content}')
-    rtrn_stmt = completion.choices[0].message.content
-    return rtrn_stmt
+    response_content = completion.choices[0].message.content.strip()
+
+    # First try to parse response_content as JSON
+    try:
+        response_json = json.loads(response_content)
+        if isinstance(response_json, dict) or isinstance(response_json, list):
+            return response_json
+        else:
+            raise ValueError("Invalid JSON format")
+    except (json.JSONDecodeError, ValueError):
+        # If parsing fails, clean response_content to make it valid JSON
+        try:
+            cleaned_content = clean_to_json(response_content)
+            response_json = json.loads(cleaned_content)
+            if isinstance(response_json, dict) or isinstance(response_json, list):
+                return response_json
+            else:
+                raise ValueError("Invalid JSON format after cleaning")
+        except (json.JSONDecodeError, ValueError):
+            # If still cannot parse as JSON, handle as needed (e.g., log the issue or return a default response)
+            return {"error": "Failed to parse JSON"}
+
+def clean_to_json(input_str):
+    # Clean input_str to make it valid JSON by removing all non-JSON characters
+    cleaned_str = ''.join(filter(lambda x: x in '[]{}"\'.,:0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ', input_str))
+    return cleaned_str.strip()
+
 
 @bp.put("/<int:char_id>", strict_slashes=False)
 def update_user_input(char_id):
