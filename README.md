@@ -22,7 +22,7 @@ Written in React and Python as a Capstone Project at <a href='https://adadevelop
 
 ## App Features"
 
-- **Interactive Map** The page will load with all game location markers currently in the Database.. The database is seeded by data generated using AI LLM Models. Both Llama and OpenAI have been implemented and tested successfully.
-- [**Desktop Version Only**] This will run on both desktop and phone but is not optimized for phone... yet.
+- **Interactive Map** The page will load with all game location markers currently in the Database. The database is seeded by data generated using AI LLM Models. Both Llama and OpenAI have been implemented and tested successfully.
+- [**Desktop Version Only**] This will run on both desktop and phone.
 - Map will automatically load your current location with geo-coordinates, unless you have your web browsers location turned off.
 - **Menu** to navigate between Map, Instructions, Filters, Search Address, Game Type, Distance to walk, and number of sites user wants to generate in the game Form.
