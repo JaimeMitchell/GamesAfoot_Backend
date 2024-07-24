@@ -105,16 +105,17 @@ def add_locations(char_id):
         new_locations = []
 
         for location in locations:
-            # Ensure latitude and longitude are converted to strings
-            latitude = str(location["latitude"])
-            longitude = str(location["longitude"])
+   
+
+    # Safely get the 'clue' key, default to an empty list if not present
+            clue = location.get("clue", [])
 
             new_location = Location(
-                name=location["name"],
-                latitude=latitude,
-                longitude=longitude,
-                description=location["description"],
-                clue=location["clue"],
+                name=location.get("name", ""),
+                latitude=str(location.get("latitude", "")),
+                longitude=str(location.get("longitude", "")),
+                description=location.get("description", ""),
+                clue=clue,
                 user_input=user_input
             )
             new_locations.append(new_location)

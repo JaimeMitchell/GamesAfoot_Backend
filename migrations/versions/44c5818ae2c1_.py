@@ -1,16 +1,16 @@
 """empty message
 
-Revision ID: 630cdaa47128
+Revision ID: 44c5818ae2c1
 Revises: 
-Create Date: 2024-07-04 19:04:01.146233
+Create Date: 2024-07-24 11:45:09.505269
 
 """
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '630cdaa47128'
+revision = '44c5818ae2c1'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -33,7 +33,7 @@ def upgrade():
     sa.Column('latitude', sa.String(), nullable=False),
     sa.Column('longitude', sa.String(), nullable=False),
     sa.Column('description', sa.String(), nullable=False),
-    sa.Column('clue', sa.String(), nullable=False),
+    sa.Column('clue', postgresql.ARRAY(sa.String()), nullable=False),
     sa.Column('user_input_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['user_input_id'], ['user_input.id'], ),
     sa.PrimaryKeyConstraint('id')
