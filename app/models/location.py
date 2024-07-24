@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.dialects.postgresql import ARRAY
 from ..db import db
 
 
@@ -9,7 +10,7 @@ class Location(db.Model):
     latitude: Mapped[str]
     longitude: Mapped[str]
     description: Mapped[str]
-    clue: Mapped[str]
+    clue: Mapped[list[str]] = mapped_column(ARRAY(String))
 
     user_input_id: Mapped[int] = mapped_column(ForeignKey("user_input.id"))
     user_input: Mapped["UserInput"] = relationship(back_populates="locations")
