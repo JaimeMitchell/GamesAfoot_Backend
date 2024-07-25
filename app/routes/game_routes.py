@@ -108,16 +108,20 @@ def add_locations(char_id):
    
 
     # Safely get the 'clue' key, default to an empty list if not present
-            clue = location.get("clue", [])
-
+            # clue = location.get("clue", [])
+            
             new_location = Location(
                 name=location.get("name", ""),
                 latitude=str(location.get("latitude", "")),
                 longitude=str(location.get("longitude", "")),
                 description=location.get("description", ""),
-                clue=clue,
+                clue=location.get("clue"),
                 user_input=user_input
             )
+            #print each clue in the list
+            for clue in location.get("clue"):
+                print(clue)
+
             new_locations.append(new_location)
 
         db.session.add_all(new_locations)
@@ -130,7 +134,7 @@ def add_locations(char_id):
         return make_response(jsonify(f"Failed to add locations: {str(e)}"), 500)
 
 def generate_locations(user_input):
-    input_message = f"Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} miles from the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. DO NOT GO OUT OF BOUNDS OF THE WALKING DISTANCE. DO NOT MAKE UP FICTIONAL LOCATIONS. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and a JSON array of 3 'clues'. Make sure to ONLY respond with a JSON ARRAY, without any charaters before or after the JSON, and NEVER A STRING REPRESENTATION OF THE JSON ARRAY. Note: If you can not find real and legitimate locations in the user's location that meet the promts request, than just insert the string values in the JSON prompting the user as to why you couldn't find anymore real locations within the distance given, whether that's distance requirements or the kind of things they want to see in their treasure hunt." 
+    input_message = f"Generate a JSON array of {user_input.num_sites} {user_input.game_type} within exactly {user_input.distance} miles from the user's location, which is ({user_input.latitude}, {user_input.longitude}) from start to finish. DO NOT GO OUT OF BOUNDS OF THE WALKING DISTANCE. DO NOT MAKE UP FICTIONAL LOCATIONS. Each object should include a string data type for 'name', 'latitude', 'longitude', 'description', and a JSON array of 3 'clue'. Make sure to ONLY respond with a JSON ARRAY, without any charaters before or after the JSON, and NEVER A STRING REPRESENTATION OF THE JSON ARRAY. Note: If you can not find real and legitimate locations in the user's location that meet the promts request, than just insert the string values in the JSON prompting the user as to why you couldn't find anymore real locations within the distance given, whether that's distance requirements or the kind of things they want to see in their treasure hunt." 
 
     print(f'input_message: {input_message}')
 

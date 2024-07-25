@@ -9,7 +9,6 @@ class UserInput(db.Model):
     distance: Mapped[str]
     num_sites: Mapped[str]
     game_type: Mapped[str]
-
     locations: Mapped[list["Location"]] = relationship(back_populates="user_input")
 
     def to_dict(self):
