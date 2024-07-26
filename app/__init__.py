@@ -3,7 +3,7 @@ from flask import Flask
 from .routes.game_routes import bp
 from .db import db, migrate
 from .models import location
-from .models import user_input
+from .models import hunt
 
 
 def create_app(test_config=None):
